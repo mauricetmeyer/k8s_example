@@ -1,0 +1,12 @@
+##
+# Misc
+*.DS_Store
+**/.env
+**/.next
+**/.secrets*
+
+##
+# Default dirs
+**/dist
+**/node_modules
+**/yarn-error.log

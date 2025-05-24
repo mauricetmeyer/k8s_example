@@ -1,0 +1,122 @@
+services:
+  api:
+    build:
+      context: ./
+      dockerfile: ./api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 8002:6000
+    depends_on:
+      - redis
+      - postgres
+      - rabbitmq
+    environment:
+      - ENV=development
+      - LOG_LEVEL=debug
+      - REDIS_URI=redis://:dev@redis:6379
+      - POSTGRES_URI=postgres://leaflytics:dev@postgres:5432/leaflytics
+
+  sync:
+    build:
+      context: ./
+      dockerfile: ./sync/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 8001:6000
+    depends_on:
+      - redis
+      - postgres
+      - rabbitmq
+    environment:
+      - ENV=development
+      - LOG_LEVEL=debug
+      - REDIS_URI=redis://:dev@redis:6379
+      - POSTGRES_URI=postgres://leaflytics:dev@postgres:5432/leaflytics
+
+  graph:
+    build:
+      context: ./
+      dockerfile: ./graph/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+      - rabbitmq
+      - elasticsearch
+    environment:
+      - ENV=development
+      - LOG_LEVEL=debug
+      - REDIS_URI=redis://:dev@redis:6379
+      - POSTGRES_URI=postgres://leaflytics:dev@postgres:5432/leaflytics
+      - RABBITMQ_URI=amqp://leaflytics:dev@rabbitmq:15672
+      - ELASTICSEARCH_URI=http://elastic:dev@elasticsearch:9200
+
+  surface:
+    build:
+      context: ./
+      dockerfile: ./surface/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./surface/dist:/data
+
+
+  edge:
+    image: envoyproxy/envoy:v1.16.0
+    ports:
+      - 8000:6000
+    depends_on:
+      - api
+      - graph
+      - surface
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+
+
+  redis:
+    image: bitnami/redis:7.0
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/bitnami/redis
+    environment:
+      REDIS_PASSWORD: dev
+      REDIS_IO_THREADS: 2
+      REDIS_DISABLE_COMMANDS: CONFIG
+
+  postgres:
+    image: bitnami/postgresql:16.2.0
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/bitnami/postgres
+    environment:
+      POSTGRES_USERNAME: leaflytics
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DATABASE: leaflytics
+
+  rabbitmq:
+    image: bitnami/rabbitmq:3.13
+    ports:
+      - 15672:15672
+    restart: unless-stopped
+    volumes:
+      - rabbitmq_data:/bitnami/rabbitmq
+    environment:
+      RABBITMQ_USERNAME: leaflytics
+      RABBITMQ_PASSWORD: dev
+
+  elasticsearch:
+    image: bitnami/elasticsearch:7
+    ports:
+      - 9200:9200
+    restart: unless-stopped
+    volumes:
+      - elasticsearch_data:/bitnami/elasticsearch
+    environment:
+      ELASTICSEARCH_PASSWORD: dev
+
+volumes:
+  redis_data:
+  postgres_data:
+  rabbitmq_data:
+  elasticsearch_data:

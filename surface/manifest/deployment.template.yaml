@@ -1,0 +1,87 @@
+##
+# IngressRoute
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: surface
+  namespace: service
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`app.leaflytics.io`)
+      priority: 1
+      services:
+        - kind: Service
+          name: surface
+          namespace: service
+          port: 80
+          strategy: RoundRobin
+          weight: 10
+  tls:
+    secretName: certificate
+---
+
+##
+# Service account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: s-surface
+  namespace: service
+---
+
+##
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: surface
+  namespace: service
+spec:
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 3000
+  selector:
+    app: s-surface
+---
+
+##
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:      s-surface
+  namespace: service
+  labels:
+    app.kubernetes.io/name: s-surface
+    app.kubernetes.io/part-of: leaflytics
+    app.kubernetes.io/version: 1.0.0
+    subway.lavireo.com/name: service.surface
+    subway.lavireo.com/type: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s-surface
+  template:
+    metadata:
+      labels:
+        app: s-surface
+      annotations:
+        linkerd.io/inject: enabled
+    spec:
+      containers:
+        - name: service
+          image: ghcr.io/leaflytics/surface:${VERSION}
+#          resources:
+#            limits:
+#              memory: "64Mi"
+#              cpu: 0.1
+      imagePullSecrets:
+        - name: regcred
+      serviceAccountName: s-surface
+---

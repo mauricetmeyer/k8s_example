@@ -1,0 +1,69 @@
+{
+  "name": "@leaflytics/shared",
+  "version": "1.0.0",
+  "description": "Shared library",
+  "license": "Laviréo Proprietary",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "lint": "eslint --cache --ext .ts .",
+    "lint:fix": "eslint --cache --fix --ext .ts .",
+    "test": "yarn test:unit && yarn test:integration",
+    "test:unit": "jest --config ./jest.unit.js",
+    "test:integration": "jest --config ./jest.integration.js",
+    "gen": "yarn gen:proto && yarn gen:types",
+    "gen:proto": "pbjs --es6 -t static-module -w es6 -o src/proto/index.js src/proto/users.proto ../bcrypt/proto/bcrypt.proto",
+    "gen:types": "pbts -o src/proto/index.d.ts src/proto/index.js",
+    "start": "NODE_ENV=development rollup -cw",
+    "build": "NODE_ENV=production rollup -c"
+  },
+  "author": {
+    "name": "Laviréo",
+    "email": "hey@lavireo.com",
+    "url": "https://lavireo.com"
+  },
+  "maintainers": [
+    "Maurice T. Meyer <maurice@lavireo.com>"
+  ],
+  "repository": "https://github.com/leaflytics/services.git",
+  "devDependencies": {
+    "@rollup/plugin-alias": "^3.1.9",
+    "@rollup/plugin-commonjs": "^22.0.1",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-typescript": "^8.3.3",
+    "@types/amqplib": "^0.10.5",
+    "@types/lodash": "^4.14.195",
+    "@types/luxon": "^3.2.0",
+    "@types/node": "^14.11.8",
+    "@types/pg": "^8.6.6",
+    "@types/uuid": "^9.0.0",
+    "@vercel/ncc": "^0.34.0",
+    "protobufjs-cli": "^1.0.0",
+    "rollup": "^2.76.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "ts-node": "^8.10.2",
+    "typescript": "^4.0.2"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.261.0",
+    "@sentry/node": "^7.34.0",
+    "@types/cookie": "^0.6.0",
+    "amqplib": "^0.10.4",
+    "cookie": "^0.6.0",
+    "dotenv": "^16.0.3",
+    "luxon": "^3.2.1",
+    "matchit": "^1.1.0",
+    "pg": "^8.11.5",
+    "protobufjs": "^7.0.0",
+    "raw-body": "^2.5.2",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.20",
+    "typeorm-naming-strategies": "^4.1.0",
+    "uuid": "^9.0.0"
+  },
+  "peerDependencies": {
+    "typeorm": "^0.3.20"
+  }
+}

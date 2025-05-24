@@ -1,0 +1,117 @@
+##
+# IngressRoute
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: graph
+  namespace: service
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`app.leaflytics.io`) && PathPrefix(`/graphql`)
+      priority: 10
+      services:
+        - kind: Service
+          name: graph
+          namespace: service
+          port: 80
+          strategy: RoundRobin
+          weight: 10
+  tls:
+    secretName: certificate
+---
+
+##
+# Service account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: s-graph
+  namespace: service
+---
+
+##
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: graph
+  namespace: service
+spec:
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 3000
+  selector:
+    app: s-graph
+---
+
+##
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:      s-graph
+  namespace: service
+  labels:
+    app.kubernetes.io/name: s-graph
+    app.kubernetes.io/part-of: leaflytics
+    app.kubernetes.io/version: 1.0.0
+    subway.lavireo.com/name: service.graph
+    subway.lavireo.com/type: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s-graph
+  template:
+    metadata:
+      labels:
+        app: s-graph
+      annotations:
+        linkerd.io/inject: enabled
+    spec:
+      containers:
+        - name: service
+          image: ghcr.io/leaflytics/graph:${VERSION}
+          env:
+            - name: ENV
+              value: production
+            - name: PORT
+              value: '3000'
+            - name: LOG_LEVEL
+              value: debug
+            - name: DOMAIN
+              value: app.leaflytics.io
+            - name: AUTHORITY_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: authority
+                  key: public
+            - name: REDIS_URI
+              valueFrom:
+                secretKeyRef:
+                  name: cache
+                  key: uri
+            - name: POSTGRES_URI
+              valueFrom:
+                secretKeyRef:
+                  name: database
+                  key: uri
+            - name: POSTGRES_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: database
+                  key: certificate
+#          resources:
+#            limits:
+#              memory: "64Mi"
+#              cpu: 0.1
+
+      imagePullSecrets:
+        - name: regcred
+      serviceAccountName: s-graph
+---

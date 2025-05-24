@@ -1,0 +1,41 @@
+import { gql } from 'graphql-tag';
+
+export const schema = gql`
+  input LoginInput {
+    email: String!
+    password: String!
+  }
+
+  type LoginPayload {
+    error: LoginError
+    result: String
+  }
+
+  enum LoginError {
+    INTERNAL
+    INVALID_CREDENTIALS
+  }
+
+  input RegisterInput {
+    name: String!
+    email: String!
+    password: String!
+  }
+
+  type RegisterPayload {
+    error: RegisterError
+    result: String
+  }
+
+  enum RegisterError {
+    INTERNAL
+    EXISTING
+    PASSWORD_TOO_LONG
+    PASSWORD_TOO_SHORT
+  }
+
+  type Mutation {
+    login(input: LoginInput!): LoginPayload!
+    register(input: RegisterInput!): RegisterPayload!
+  }
+`;

@@ -1,0 +1,30 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "jsx":                          "react-jsx",
+    "jsxImportSource":              "@emotion/react",
+    "target":                       "es6",
+    "module":                       "esnext",
+    "moduleResolution":             "node",
+    "esModuleInterop":              true,
+    "emitDecoratorMetadata":        true,
+    "experimentalDecorators":       true,
+    "allowSyntheticDefaultImports": true,
+    "strict":                       true,
+    "noImplicitAny":                true,
+    "sourceMap":                    true,
+    "outDir":                       "./dist",
+    "baseUrl":                      "./",
+    "paths": {
+      "~/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "types/**/*"
+  ],
+  "exclude": [
+    "./dist",
+    "node_modules"
+  ]
+}

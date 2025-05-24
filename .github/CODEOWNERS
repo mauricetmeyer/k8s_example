@@ -1,0 +1,5 @@
+##
+# The follow pattern matches all changes for .rule files.
+# As they control ingress to our services these changes
+# require a review by a @security member.
+/**/manifest/ingress/*.rule @security

@@ -1,0 +1,44 @@
+{
+  "name": "@leaflytics/hooks.stripe",
+  "version": "1.0.0",
+  "description": "Stripe Webhooks handler",
+  "license": "Laviréo Proprietary",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "lint": "eslint --cache --ext .ts .",
+    "lint:fix": "eslint --cache --fix --ext .ts .",
+    "test": "test:unit && test:integration",
+    "test:ci": "jest --config ./jest.unit.js && jest --config ./jest.integration.js",
+    "test:e2e": "jest --config ./jest.e2e.js",
+    "test:unit": "jest --config ./jest.unit.js",
+    "test:integration": "jest --config ./jest.integration.js",
+    "start": "nodemon --watch 'src/**/*.ts' --watch '../shared/dist/**' --exec ncc run src/main.ts",
+    "build": "ncc build src/main.ts"
+  },
+  "engines": {
+    "node": ">=16.6.0"
+  },
+  "author": {
+    "name": "Laviréo",
+    "email": "hey@lavireo.com",
+    "url": "https://lavireo.com"
+  },
+  "maintainers": [
+    "Maurice T. Meyer <maurice@lavireo.com>"
+  ],
+  "repository": "https://github.com/leaflytics/services.git",
+  "devDependencies": {
+    "@types/lodash": "^4.14.177",
+    "@types/node": "^14.11.8",
+    "@vercel/ncc": "^0.36.1",
+    "nodemon": "^2.0.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.2"
+  },
+  "dependencies": {
+    "@leaflytics/shared": "1.0.0",
+    "cross-env": "5.0.5",
+    "lodash": "^4.17.21"
+  }
+}

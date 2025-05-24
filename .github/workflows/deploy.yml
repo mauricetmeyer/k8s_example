@@ -1,0 +1,162 @@
+name: Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        type: choice
+        required: true
+        description: The service to deploy
+        options:
+          - api
+          - sync
+          - graph
+          - surface
+          - website
+          - hooks.apple
+          - hooks.google
+          - hooks.stripe
+          - hooks.postmark
+
+env:
+  ENV: production
+  SERVICE: ${{ inputs.service }}
+  REGISTRY: ghcr.io
+  NODE_VERSION: 20
+
+jobs:
+#  lint:
+#    name: Lint
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: actions/setup-node@v4
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'yarn'
+#
+#      - name: Setup dependencies
+#        run: yarn install --ignore-scripts --frozen-lockfile
+#        working-directory: ${{ inputs.services }}
+#
+#      - name: Build shared
+#        run: yarn build
+#        working-directory: shared
+#
+#      - name: Lint
+#        run: yarn lint
+#
+#  test:
+#    name: Test
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: actions/setup-node@v4
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'yarn'
+#
+#      - name: Setup dependencies
+#        run: yarn install --ignore-scripts --frozen-lockfile
+#        working-directory: ${{ inputs.services }}
+#
+#      - name: Build shared
+#        run: yarn build
+#        working-directory: shared
+#
+#      - name: Run tests
+#        run: yarn test
+
+  build:
+    name: Build
+#    needs:
+#      - lint
+#      - test
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        env:
+          RELEASE: ${{ github.sha }}
+          NODE_ENV: production
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          file: ${{ inputs.service }}/Dockerfile
+          tags: ghcr.io/leaflytics/${{ inputs.service }}:${{ github.sha }}
+          context: .
+
+#      - name: Create Sentry release
+#        uses: getsentry/action-release@v1
+#        env:
+#          SENTRY_ORG: leaflytics
+#          SENTRY_PROJECT: services
+#          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_TOKEN }}
+#        with:
+#          sourcemaps: ./dist
+#          environment: production
+
+  migration:
+    name: Migration
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Setup dependencies
+        run: yarn install --ignore-scripts --frozen-lockfile
+
+      - name: Build shared
+        run: yarn build
+        working-directory: shared
+
+      - name: Run migrations
+        env:
+          POSTGRES_URI: ${{ secrets.POSTGRES_URI }}
+          POSTGRES_CERT: ${{ secrets.POSTGRES_CERT }}
+        working-directory: ${{ inputs.service }}
+        run: yarn migration:run
+
+  deploy:
+    name: Deploy
+    env:
+      VERSION: ${{ github.sha }}
+    needs:
+      - migration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DO_TOKEN }}
+
+      - name: Save kubeconfig
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ vars.CLUSTER_ID }}
+
+      - name: Write deployment file
+        run: envsubst < $SERVICE/manifest/deployment.template.yaml > $SERVICE/manifest/deployment.yaml
+
+      - name: Deploy to Kubernetes
+        run: kubectl apply -f $SERVICE/manifest/deployment.yaml
+
+      - name: Verify deployment
+        run: kubectl rollout status -n=service deployment/s-$SERVICE

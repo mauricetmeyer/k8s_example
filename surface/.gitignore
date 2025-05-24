@@ -1,0 +1,23 @@
+##
+# Misc
+*.DS_Store
+*.secrets.yml
+.secrets
+.history
+/.idea/
+
+##
+# Default dirs
+**/.env
+**/.next
+**/node_modules
+**/dist
+**/lib
+**/yarn-error.log
+
+##
+# ignore yarn.locks generated in packages
+# **/yarn.lock
+/local/
+/.secrets/
+/docker-compose.yml
